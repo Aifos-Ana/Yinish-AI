@@ -20,7 +20,7 @@ The AI players in this project use two different strategies:
 Make sure you have Python installed. Then simply run:
 
 ```bash
-python main.py
+python3 main.py
 ```
 
 The GUI will launch, allowing you to choose the desired game mode.
@@ -48,3 +48,7 @@ The GUI will launch, allowing you to choose the desired game mode.
 ## 📖 About Yinsh:
 
 [Yinsh](https://en.wikipedia.org/wiki/YINSH) is a two-player abstract strategy board game and part of the GIPF project series. The goal is to remove three of your own rings by forming lines of five markers.
+
+<hr>
+
+> Project developed for Artificial Inteligence course @FEUP.
