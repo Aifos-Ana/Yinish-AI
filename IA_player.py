@@ -103,16 +103,20 @@ class IA_player:
                     self.curr_game_state.choose_ring_time = False
 
                     end = time.time()
-                    self.curr_game_state.game_move_history[PLAYER_2].append(f"Placed Marker at {best_pos}. Time taken: {end - start:.4f}s") # Corrected line
+                    self.curr_game_state.board.move_history.append(f"Player 2: Placed Marker at {best_pos}. Time taken: {end - start:.4f}s")
                 elif self.algorithm == MONTE_CARLO_ALGHORITM:
                     best_pos = self.monte_carlo_tree_search_choose_ring()
                     self.curr_game_state.ring_to_be_moved[PLAYER_2] = best_pos
+                    self.curr_game_state.choose_ring_time = False
+                    end = time.time()
+                    self.curr_game_state.board.move_history.append(f"Player 2: Placed Marker at {best_pos}. Time taken: {end - start:.4f}s")
+
         else:
             if self.curr_game_state.remove_ring_time:
                 if valid_positions:
                     random_pos = random.choice(valid_positions)
                     self.curr_game_state.board.hex_positions[random_pos] = '0'  # Remove the ring
-                    self.curr_game_state.game_move_history[PLAYER_2].append(f"Removed Ring at {random_pos}") # Corrected line
+                    self.curr_game_state.board.move_history.append(f"Player 2: Removed Ring at {random_pos}")
                 self.curr_game_state.remove_ring_time = False
 
     def move_ring(self):
@@ -127,16 +131,9 @@ class IA_player:
         valid_moves = self.curr_game_state.get_valid_moves(ring_to_move)
 
         if best_move:
-            # Garante que deixamos o marcador na posição anterior
-            if self.curr_board_state.hex_positions[ring_to_move] == 'R_2':
-                self.curr_board_state.hex_positions[ring_to_move] = 'M_2'
-
             moved_successfully = self.curr_game_state.move_ring(best_move)
             end = time.time()
-
-            self.curr_game_state.game_move_history[PLAYER_2].append(
-                f"Moved Ring from {ring_to_move} to {best_move}. Time taken: {end - start:.4f}s"
-            )
+            self.curr_game_state.save_time = f'{end - start:.4f}s'
             
     def minimax_decision(self):
         valid_moves = self.curr_game_state.get_valid_moves(self.curr_game_state.ring_to_be_moved[PLAYER_2])
@@ -186,51 +183,45 @@ class IA_player:
             return min_eval
 
     def evaluate_board_state(self, game):
-        """ Avalia o estado do tabuleiro usando a estratégia comentada. """
+    
         final_scores = {}
-        #four_line_points = 0
 
         for player in [PLAYER_1, PLAYER_2]:
             opponent = PLAYER_2 if player == PLAYER_1 else PLAYER_1
 
-            # Calcula a pontuação da margem de anéis
             rings_removed = game.scores[player]
             opponent_rings_removed = game.scores[opponent]
             ring_margin_score = game.get_ring_margin_score(rings_removed, opponent_rings_removed)
 
-            # Calcula a margem de marcadores
+            
             markers_remaining = sum(1 for pos, marker in game.board.hex_positions.items() if marker == f'M_{player}')
             marker_margin_score = markers_remaining
 
             blocking_score = self.detect_blocking_opportunity(player, game)
 
-
-            # Score final do jogador
             final_scores[player] = ring_margin_score + marker_margin_score + 0.2 * blocking_score
 
-        return final_scores[PLAYER_2] - final_scores[PLAYER_1]  # Retorna a vantagem da IA sobre o oponente
+        return final_scores[PLAYER_2] - final_scores[PLAYER_1]  
 
     def detect_blocking_opportunity(self, player, game):
-        directions = game.board.get_directions()  # Todas as direções possíveis no tabuleiro
+        directions = game.board.get_directions()  
         opponent = PLAYER_2 if player == PLAYER_1 else PLAYER_1
         opponent_marker = f'M_{opponent}'
-        blocking_score = 0  # Inicializa a pontuação de bloqueio
+        blocking_score = 0  
 
         for position, marker in game.board.hex_positions.items():
             if marker != opponent_marker:
-                continue  # Ignorar posições que não tenham marcadores do oponente
+                continue  
 
             for direction in directions:
                 current_pos = position
-                line = [position]  # Começa com a posição atual do marcador adversário
-                empty_spots = []  # Guarda espaços vazios na linha
-                marker_count = 1  # Contador de quantos marcadores consecutivos do oponente encontramos
-
-            # Verificar em uma direção
+                line = [position]  
+                empty_spots = []  
+                marker_count = 1  
+                
                 while True:
                     next_pos = game.board.get_next_position(current_pos, direction)
 
-                # Se a próxima posição for inválida, interromper
                     if next_pos is None or next_pos not in game.board.hex_positions:
                         break
 
@@ -239,22 +230,20 @@ class IA_player:
                     if next_marker == opponent_marker:
                         marker_count += 1
                         line.append(next_pos)
-                        current_pos = next_pos  # Atualizar a posição para continuar verificando
-                    elif next_marker == '0':  # '0' representa uma casa vazia
+                        current_pos = next_pos 
+                    elif next_marker == '0':  
                         empty_spots.append(next_pos)
-                        break  # Para de contar a linha aqui
+                        break  
                     else:
-                        break  # Se encontrou outra peça que não seja do adversário, parar a contagem
+                        break 
 
-            # Se encontrarmos 3 marcadores consecutivos do oponente + 1 espaço vazio → bloqueio crítico
                 if marker_count == 3 and len(empty_spots) == 1:
-                    blocking_score += 5  # Um bloqueio muito importante
+                    blocking_score += 5 
 
-            # Se encontrarmos 2 marcadores consecutivos do oponente + 2 espaços vazios → ameaça futura
                 elif marker_count == 2 and len(empty_spots) == 2:
-                    blocking_score += 2  # Um bloqueio menos crítico, mas relevante
+                    blocking_score += 2  
 
-        return blocking_score  # Retorna a pontuação total de bloqueio
+        return blocking_score 
 
     def get_valid_moves(self, curr_board_state, condition):
         return [pos for pos, val in curr_board_state.board.hex_positions.items() if val == condition]

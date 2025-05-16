@@ -1,7 +1,7 @@
 from Menu import *
 from macros import *
 from boardState import *
-from Human_player import *
+from Human_player import * 
 
 class YinshGame:
     def __init__(self, player1, player2):  # Dois underscores antes e depois de "init"
@@ -17,13 +17,13 @@ class YinshGame:
         self.reset_game_var = False
         self.winner = None
 
-        self.game_move_history = {PLAYER_1: [], PLAYER_2:[]} #guarda o histórico de movimentos
-
+        
         self.is_IA_player = False
         self.IA_player = None
         self.rings_position_for_IA = []  #talves seja útil para a AI
         self.remove_ring_time = False
         self.choose_ring_time = False
+        self.save_time = 0
 
         if(player2.type == 'IA'):
             player2.board = self.board
@@ -34,17 +34,19 @@ class YinshGame:
             print("<--AI player playing!-->")
 
 
+    
     def place_first_10_rings(self, hex_pos):
         if hex_pos in self.board.hex_positions and self.board.hex_positions[hex_pos] == '0':
             if self.current_turn == PLAYER_1:
-                self.game_move_history[PLAYER_1].append(f"Placed Ring at {hex_pos}")
-                self.board.hex_positions[hex_pos] = 'R_1'
+                self.board.move_history.append(f"Player 1: Placed Ring at {hex_pos}")
+
+                self.board.hex_positions[hex_pos] = 'R_1' 
                 self.current_turn = PLAYER_2
             else:
-                self.game_move_history[PLAYER_2].append(f"Placed Ring at {hex_pos}")
-                self.board.hex_positions[hex_pos] = 'R_2'
+                self.board.move_history.append(f"Player 2: Placed Ring at {hex_pos}")
+                self.board.hex_positions[hex_pos] = 'R_2' 
                 self.current_turn = PLAYER_1
-
+            
             self.current_round += 1
             return True
         return False #uma das condições do if sáo inválidas
@@ -68,9 +70,9 @@ class YinshGame:
                 if self.board.hex_positions[hex_pos] == f'R_{self.ring_to_remove}':
 
                     if self.current_turn == PLAYER_1:
-                        self.game_move_history[PLAYER_1].append(f"Removed Ring at {hex_pos}")
+                        self.board.move_history.append(f"Player 1: Removed Ring at {hex_pos}")
                     else:
-                        self.game_move_history[PLAYER_2].append(f"Removed Ring at {hex_pos}")
+                        self.board.move_history.append(f"Player 2: Removed Ring at {hex_pos}")
 
                     self.board.hex_positions[hex_pos] = '0'  # Remove the ring
                     print(f"Player {self.ring_to_remove} removed their ring at {hex_pos}")
@@ -84,22 +86,18 @@ class YinshGame:
 
         # Normal move logic
         print(f"Current ring to be moved for {self.current_turn} turn: {self.ring_to_be_moved[self.current_turn]}")
+        
 
 
         if self.ring_to_be_moved[self.current_turn]:
             save_val = self.ring_to_be_moved[self.current_turn]
             ##############IA move
             if self.current_turn == PLAYER_2 and self.is_IA_player:
-                print(f"Tipo de self.board.move_history ANTES da IA mover: {type(self.board.move_history)}")
                 self.IA_player.move_ring()
                 return True
             ##############IA move
 
             if self.move_ring(hex_pos):  # If the ring is moved, flip markers
-                if self.current_turn == PLAYER_1:
-                    self.game_move_history[PLAYER_1].append(f"Moved Ring from {save_val} to {hex_pos}")
-                else:
-                    self.game_move_history[PLAYER_2].append(f"Moved Ring from {save_val} to {hex_pos}")
                 return True
 
         # First 10 moves to place rings
@@ -127,9 +125,9 @@ class YinshGame:
                     self.ring_to_be_moved[self.current_turn] = hex_pos
 
                     if self.current_turn == PLAYER_1:
-                        self.game_move_history[PLAYER_1].append(f"Placed Marker at {hex_pos}")
+                        self.board.move_history.append(f"Player 1: Placed Marker at {hex_pos}")
                     else:
-                        self.game_move_history[PLAYER_2].append(f"Placed Marker at {hex_pos}")
+                        self.board.move_history.append(f"Player 2: Placed Marker at {hex_pos}")
 
                     self.valid_moves = self.get_valid_moves(hex_pos)
                     print(f"Valid moves for the selected ring: {self.valid_moves}")
@@ -144,12 +142,23 @@ class YinshGame:
         if self.board.hex_positions[hex_pos] == '0':  # Ensure the position is empty
             previous_pos = self.ring_to_be_moved[self.current_turn]
 
+
             if self.current_turn == PLAYER_1:
                 self.board.hex_positions[hex_pos] = 'R_1'
                 self.board.hex_positions[previous_pos] = 'M_1'
+                self.board.move_history.append(f"Player 1: Moved Ring from {previous_pos} to {hex_pos}")
+
             else:
                 self.board.hex_positions[hex_pos] = 'R_2'
                 self.board.hex_positions[previous_pos] = 'M_2'
+
+                if self.IA_player:
+                    self.board.move_history.append(f"Player 2: Moved Ring from {previous_pos} to {hex_pos}. Time taken: {self.save_time}")
+                    self.save_time = None
+                else:
+                    self.board.move_history.append(f"Player 2: Moved Ring from {previous_pos} to {hex_pos}")
+
+
 
             self.ring_to_be_moved[self.current_turn] = None
             self.valid_moves = []
@@ -212,9 +221,9 @@ class YinshGame:
                 current_pos = next_pos  # Move forward
 
         return valid_moves
-
-
-    def find_used_dir(self, end_position):
+    
+    
+    def find_used_dir(self, end_position):  
         print(f"Finding direction for position: {end_position}")
         print(f"Current track_dir: {self.track_dir}")
         for direction, positions in self.track_dir.items():
@@ -229,12 +238,12 @@ class YinshGame:
         for position in positions:
             if position == end_pos:
                 return # esta condição dá bem porque as posições esstão por ordem, quando chega a end_pos para de virar os markers que estão naquela linha
-
+            
             if self.board.hex_positions[position] == 'M_1':
                 self.board.hex_positions[position] = 'M_2'
             elif self.board.hex_positions[position] == 'M_2':
-                self.board.hex_positions[position] = 'M_1'
-
+                self.board.hex_positions[position] = 'M_1'  
+    
     def get_board(self):
         return self.board
 
@@ -284,7 +293,7 @@ class YinshGame:
                         self.reset_game_var = True
                         self.winner = player
 
-                    return True
+                    return True  
 
         # Check for a tie if no 5-marker line is found
         if self.check_for_tie():
@@ -311,7 +320,7 @@ class YinshGame:
 
         for player in [PLAYER_1, PLAYER_2]:
             opponent = PLAYER_2 if player == PLAYER_1 else PLAYER_1
-
+            
             # Calculate Ring Margin Score using lookup table
             rings_removed = self.scores[player]
             opponent_rings_removed = self.scores[opponent]
