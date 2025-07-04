@@ -1,7 +1,7 @@
 from macros import *
 import math
 import random
-import copy # create a deep copy of an object, meaning that it recursively copies all objects within the original object, creating entirely new instances of them. This ensures that changes made to the copied object do not affect the original object and vice versa.
+import copy 
 import time
 
 class MCTSNode:
@@ -52,7 +52,6 @@ class MCTSNode:
         return None
 
     def update(self, result):
-        """ Backpropagates the result of a simulation """
         self.visits += 1
         self.wins += result
 
@@ -60,19 +59,19 @@ class MCTSNode:
 class IA_player:
     def __init__(self, difficulty, algorithm):
         self.depth = 6 if difficulty == 'H' else (3 if difficulty == 'E' else 4)  # Depth for Minimax
+
         self.type = 'IA'
         self.algorithm = algorithm  # Algorithm type: MINIMAX_ALGHORITM or MONTE_CARLO_ALGHORITM
         self.board = None
         self.curr_game_state = None
         self.curr_board_state = None
         self.best_ring_pos = None
-        print(f"IA PLAYER CALLED WITH DIFFICULTY {difficulty} AND ALGHORITM {algorithm}")
+        
 
     def place_10_rings(self):
         valid_positions = self.get_valid_moves(self.curr_game_state, '0')
         if valid_positions:
             random_pos = random.choice(valid_positions)
-            print(f"AI escolheu a posição {random_pos} para colocar um anel.")
             self.curr_game_state.place_first_10_rings(random_pos)
 
 
@@ -86,24 +85,13 @@ class IA_player:
         if self.curr_game_state.choose_ring_time and self.curr_game_state.current_turn == PLAYER_2:
             if valid_positions:
                 if self.algorithm == MINIMAX_ALGHORITM:
-                    best_score = float('-inf')
-                    best_pos = None
+                    best_pos = self.minimax_choose_ring(self.curr_game_state,self.depth,True)[1]
 
-                    for pos in valid_positions:
-                        simulated_board = copy.deepcopy(self.curr_game_state)
-                        simulated_board.ring_to_be_moved[PLAYER_2] = pos
-                        score = self.minimax(simulated_board, self.depth, False, alpha, beta)
-
-                        if score > best_score:
-                            best_score = score
-                            best_pos = pos
-
-                    self.best_ring_pos = best_pos
                     self.curr_game_state.ring_to_be_moved[PLAYER_2] = best_pos
                     self.curr_game_state.choose_ring_time = False
-
                     end = time.time()
                     self.curr_game_state.board.move_history.append(f"Player 2: Placed Marker at {best_pos}. Time taken: {end - start:.4f}s")
+
                 elif self.algorithm == MONTE_CARLO_ALGHORITM:
                     best_pos = self.monte_carlo_tree_search_choose_ring()
                     self.curr_game_state.ring_to_be_moved[PLAYER_2] = best_pos
@@ -111,6 +99,12 @@ class IA_player:
                     end = time.time()
                     self.curr_game_state.board.move_history.append(f"Player 2: Placed Marker at {best_pos}. Time taken: {end - start:.4f}s")
 
+                elif self.algorithm == NEGAMAX_ALGHORITM:
+                    best_pos = self.negaMax_choose_ring(self.curr_game_state,self.depth)[1]
+                    self.curr_game_state.ring_to_be_moved[PLAYER_2] = best_pos
+                    self.curr_game_state.choose_ring_time = False
+                    end = time.time()
+                    self.curr_game_state.board.move_history.append(f"Player 2: Placed Marker at {best_pos}. Time taken: {end - start:.4f}s")
         else:
             if self.curr_game_state.remove_ring_time:
                 if valid_positions:
@@ -121,66 +115,124 @@ class IA_player:
 
     def move_ring(self):
         start = time.time()
-        ring_to_move = self.curr_game_state.ring_to_be_moved[PLAYER_2]
 
         if self.algorithm == MINIMAX_ALGHORITM:
-            best_move = self.minimax_decision()
+            best_move = self.minimax_move_ring(self.curr_game_state,self.depth,True)[1]
         elif self.algorithm == MONTE_CARLO_ALGHORITM:
             best_move = self.monte_carlo_tree_search_move_ring()
-
-        valid_moves = self.curr_game_state.get_valid_moves(ring_to_move)
+        elif self.algorithm == NEGAMAX_ALGHORITM:
+            best_move = self.negaMax_move_ring(self.curr_game_state, self.depth)[1]
 
         if best_move:
-            moved_successfully = self.curr_game_state.move_ring(best_move)
+            self.curr_game_state.move_ring(best_move)
             end = time.time()
             self.curr_game_state.save_time = f'{end - start:.4f}s'
             
-    def minimax_decision(self):
-        valid_moves = self.curr_game_state.get_valid_moves(self.curr_game_state.ring_to_be_moved[PLAYER_2])
-        best_score = float('-inf')
-        best_move = None
 
-        alpha = float('-inf')
-        beta = float('inf')
-
-        for move in valid_moves:
-            simulated_board = copy.deepcopy(self.curr_game_state)
-            simulated_board.move_ring(move)
-            score = self.minimax(simulated_board, self.depth - 1, False, alpha, beta)
-            if score > best_score:
-                best_score = score
-                best_move = move
-
-        return best_move
-
-    def minimax(self, game, depth, is_maximizing,alpha,beta):
+        
+    def minimax_choose_ring(self, game, depth, is_maximizing, alpha=-9999, beta=9999):
         if depth == 0 or game.game_over or game.reset_game_var:
-            return self.evaluate_board_state(game)
+            return self.evaluate_board_state(game), None
+
+        best_move = None  
 
         if is_maximizing:
             max_eval = float('-inf')
             possible_moves = self.get_valid_moves(game, 'R_2')
             for move in possible_moves:
-                simulated_board = copy.deepcopy(game, memo={})
+                simulated_board = copy.deepcopy(game)
                 simulated_board.ring_to_be_moved[PLAYER_2] = move
-                evaluation = self.minimax(simulated_board, depth - 1, False,alpha,beta)
-                max_eval = max(max_eval, evaluation)
-                alpha = max(alpha,evaluation)
+                evaluation, _ = self.minimax_choose_ring(simulated_board, depth - 1, False, alpha, beta)
+            
+                if evaluation > max_eval:
+                    max_eval = evaluation
+                    best_move = move
+
+                alpha = max(alpha, evaluation)
+            
                 if beta <= alpha:
                     break
-            return max_eval
-        else:
+
+            return max_eval, best_move
+
+        else:  
             min_eval = float('inf')
             possible_moves = self.get_valid_moves(game, 'R_1')
             for move in possible_moves:
-                simulated_board = copy.deepcopy(game, memo={})
+                simulated_board = copy.deepcopy(game)
                 simulated_board.ring_to_be_moved[PLAYER_1] = move
-                evaluation = self.minimax(simulated_board, depth - 1, True, alpha, beta)
-                min_eval = min(min_eval, evaluation)
-                beta = min(beta,evaluation)
+                evaluation, _ = self.minimax_choose_ring(simulated_board, depth - 1, True, alpha, beta)
+
+                if evaluation < min_eval:
+                    min_eval = evaluation
+                    best_move = move
+
+                beta = min(beta, evaluation)
+
                 if beta <= alpha:
                     break
-            return min_eval
+
+        return min_eval, best_move
+
+
+
+    def minimax_move_ring(self, game, depth, is_maximizing, alpha=-9999, beta=9999):
+        if depth == 0 or game.game_over or game.reset_game_var:
+            return self.evaluate_board_state(game), None 
+
+        best_move = None  
+
+        if is_maximizing:
+            max_eval = float('-inf')
+            possible_moves = game.get_valid_moves(game.ring_to_be_moved[PLAYER_2])
+
+            for move in possible_moves:
+                simulated_board = copy.deepcopy(game)
+                simulated_board.move_ring(move)  # Simula o movimento
+                #restore
+                simulated_board.ring_to_be_moved[PLAYER_2] = game.ring_to_be_moved[PLAYER_2]
+                evaluation, _ = self.minimax_move_ring(simulated_board, depth - 1, False, alpha, beta)
+                
+                if evaluation > max_eval:
+                    max_eval = evaluation
+                    best_move = move
+
+                alpha = max(alpha, evaluation)
+
+                if beta <= alpha:
+                    break
+
+            return max_eval, best_move  
+
+        else:  
+            min_eval = float('inf')
+            #player1 has to have a ring to be moved
+
+            if not game.ring_to_be_moved[PLAYER_1]:
+                player1_choose_ring = self.minimax_choose_ring(game,self.depth,False)[1]
+                game.ring_to_be_moved[PLAYER_1] = player1_choose_ring
+                possible_moves = game.get_valid_moves(game.ring_to_be_moved[PLAYER_1])
+            else:
+                possible_moves = game.get_valid_moves(game.ring_to_be_moved[PLAYER_1])
+
+            for move in possible_moves:
+                simulated_board = copy.deepcopy(game)
+                simulated_board.move_ring(move)  # Simula o movimento
+                #restore
+                simulated_board.ring_to_be_moved[PLAYER_1] = game.ring_to_be_moved[PLAYER_1]
+                evaluation, _ = self.minimax_move_ring(simulated_board, depth - 1, True, alpha, beta)
+
+                if evaluation < min_eval:
+                    min_eval = evaluation
+                    best_move = move
+
+                beta = min(beta, evaluation)
+
+                if beta <= alpha:
+                    break
+
+            return min_eval, best_move 
+
 
     def evaluate_board_state(self, game):
     
@@ -264,8 +316,7 @@ class IA_player:
         return best_node.game_state.ring_to_be_moved[PLAYER_2] if best_node else random.choice(root.untried_moves)
 
     def monte_carlo_tree_search_move_ring(self):
-        print("MCTS move_ring started") # Added print
-        """ Uses MCTS to decide the best move for the ring. """
+
         root = MCTSNode(copy.deepcopy(self.curr_game_state))
 
         time_limit = time.time() + 2 # Run for 2 seconds
@@ -277,7 +328,7 @@ class IA_player:
             self.backpropagate(node, result)
 
         best_node = root.best_child(exploration_weight=0)
-        print("MCTS move_ring finished") # Added print
+        
         return best_node.move[1] if best_node and best_node.move else None
     
     def select(self, node):
@@ -341,3 +392,82 @@ class IA_player:
         while node is not None:
             node.update(result)
             node = node.parent
+
+    
+    def negaMax_choose_ring(self,game_state, depth, curr_player=PLAYER_2):
+        if depth == 0 or game_state.game_over or game_state.reset_game_var:
+            return self.evaluate_board_state_negamax(game_state,curr_player), None
+        
+        if curr_player == PLAYER_2:
+            cond = 'R_2'
+        else:
+            cond = 'R_1'
+        
+        best_value = float('-inf')
+        best_move = None
+        opponent = PLAYER_1 if curr_player == PLAYER_2 else PLAYER_2
+        
+        for child in self.get_valid_moves(game_state, cond):
+            new_game_state = copy.deepcopy(game_state)
+            new_game_state.ring_to_be_moved[curr_player] = child
+            value, _ =  self.negaMax_choose_ring(new_game_state, depth - 1, opponent)
+        
+            value = - value
+
+            if value > best_value:
+                best_value = value
+                best_move = child #child is the hex position 
+
+        return best_value, best_move
+        
+
+
+    
+    def negaMax_move_ring(self,game_state, depth, curr_player=PLAYER_2):
+        if depth == 0 or game_state.game_over or game_state.reset_game_var:
+            return self.evaluate_board_state_negamax(game_state,curr_player), None
+        
+        best_value = float('-inf')
+        best_move = None
+        opponent = PLAYER_1 if curr_player == PLAYER_2 else PLAYER_2
+        
+        for child  in game_state.get_valid_moves(game_state.ring_to_be_moved[curr_player]):
+            new_game_state = copy.deepcopy(game_state)
+            new_game_state.move_ring(child)
+            value, _ =  self.negaMax_choose_ring(new_game_state, depth - 1, opponent)
+
+            value = -value
+
+            if value > best_value:
+                best_value = value
+                best_move = child #child is the hex position 
+
+        return best_value, best_move
+
+
+
+    def evaluate_board_state_negamax(self, game, current_player):
+        opponent = PLAYER_1 if current_player == PLAYER_2 else PLAYER_2
+
+        rings_removed = game.scores[current_player]
+        opponent_rings_removed = game.scores[opponent]
+        ring_margin_score = game.get_ring_margin_score(rings_removed, opponent_rings_removed)
+
+        markers_remaining = sum(1 for pos, marker in game.board.hex_positions.items() if marker == f'M_{current_player}')
+        marker_margin_score = markers_remaining
+
+        blocking_score = self.detect_blocking_opportunity(current_player, game)
+
+        return ring_margin_score + marker_margin_score + 0.2 * blocking_score
+    
+
+
+
+
+
+
+
+
+
+
+

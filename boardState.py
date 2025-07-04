@@ -32,7 +32,6 @@ class boardState:
         :return: A list of direction vectors (e.g., [(1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1)]).
         """
         directions = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1)]
-        print(f"Directions: {directions}")  # Debugging
         return directions
 
     def get_next_position(self, current_pos, direction):

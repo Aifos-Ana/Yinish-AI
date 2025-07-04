@@ -31,7 +31,6 @@ class YinshGame:
             self.IA_player = player2
             self.IA_player.curr_game_state = self
             self.IA_player.curr_board_state = self.board
-            print("<--AI player playing!-->")
 
 
     
@@ -53,7 +52,6 @@ class YinshGame:
 
     def make_move(self, hex_pos=None):
         if self.game_over:
-            print("The game is over. No more moves can be made.")
             return False
 
         # If a ring needs to be removed
@@ -75,19 +73,14 @@ class YinshGame:
                         self.board.move_history.append(f"Player 2: Removed Ring at {hex_pos}")
 
                     self.board.hex_positions[hex_pos] = '0'  # Remove the ring
-                    print(f"Player {self.ring_to_remove} removed their ring at {hex_pos}")
                     self.ring_to_remove = None  # Reset the flag
                     # Switch turns after removing the ring
                     self.current_turn = PLAYER_2 if self.current_turn == PLAYER_1 else PLAYER_1
                     return True
                 else:
-                    print(f"Invalid ring removal at {hex_pos}. Player {self.ring_to_remove} must remove one of their own rings.")
                     return False
 
-        # Normal move logic
-        print(f"Current ring to be moved for {self.current_turn} turn: {self.ring_to_be_moved[self.current_turn]}")
         
-
 
         if self.ring_to_be_moved[self.current_turn]:
             save_val = self.ring_to_be_moved[self.current_turn]
@@ -130,13 +123,11 @@ class YinshGame:
                         self.board.move_history.append(f"Player 2: Placed Marker at {hex_pos}")
 
                     self.valid_moves = self.get_valid_moves(hex_pos)
-                    print(f"Valid moves for the selected ring: {self.valid_moves}")
                 else:
                     print(f"Failed to place marker at {hex_pos}")
 
     def move_ring(self, hex_pos):
         if hex_pos not in self.valid_moves:
-            print(f"Invalid move! {hex_pos} is not in the valid moves list: {self.valid_moves}")
             return False  # Reject the move
 
         if self.board.hex_positions[hex_pos] == '0':  # Ensure the position is empty
@@ -174,19 +165,16 @@ class YinshGame:
             # Check for 5-marker lines for both players
             for player in [PLAYER_1, PLAYER_2]:
                 if self.check_for_five_marker_line(player):     #isto procura
-                    print(f"Player {player} scored a point!")
                     self.ring_to_remove = player  # Set the flag to the player who scored
                     return True  # Wait for the player to remove a ring
 
             # Switch turns if no ring needs to be removed
             self.current_turn = PLAYER_2 if self.current_turn == PLAYER_1 else PLAYER_1
-            print(f"Moved ring to {hex_pos}. Now it's {self.current_turn}'s turn.")
 
             # Reset track_dir after the move is fully processed
             self.track_dir = {(1, 0): [], (-1, 0): [], (0, 1): [], (0, -1): [], (1, -1): [], (-1, 1): []}
             return True
 
-        print(f"Failed to move ring to {hex_pos}")
         return False
 
     def get_valid_moves(self, ring_pos):
@@ -224,13 +212,10 @@ class YinshGame:
     
     
     def find_used_dir(self, end_position):  
-        print(f"Finding direction for position: {end_position}")
-        print(f"Current track_dir: {self.track_dir}")
         for direction, positions in self.track_dir.items():
             for position in positions:
                 if position == end_position:
                     return direction
-        print(f"Error: Direction for position {end_position} not found in track_dir.")
         return None
 
     def flip_markers(self, positions, end_pos):
@@ -271,7 +256,6 @@ class YinshGame:
                 # If a line of 5 markers is found
                 if len(line) >= 5:
                     self.scores[player] += 1  # Increment the specified player's score
-                    print(f"Player {player} scores 1 point! Current score: {self.scores[player]}")
 
                     if len(line) % 5:
                         self.remove_markers(line)  # Remove the markers in the line
@@ -283,12 +267,10 @@ class YinshGame:
 
                     # Check if the player has won the game
                     if self.scores[player] == 3:
-                        print(f"Player {player} wins the game!")
                         self.game_over = True  # Set the game over flag
 
                         # Calculate and print final scores for debugging
                         final_scores = self.calculate_final_scores()
-                        print(f"Final Scores: Player 1: {final_scores[PLAYER_1]:.3f}, Player 2: {final_scores[PLAYER_2]:.3f}")
                         self.game_over = True
                         self.reset_game_var = True
                         self.winner = player
@@ -307,7 +289,6 @@ class YinshGame:
     def remove_markers(self, positions):
         for pos in positions:
             self.board.hex_positions[pos] = '0'  # Reset the position to empty
-        print(f"Removed markers at positions: {positions}")
 
 
     def get_ring_margin_score(self, rings_removed, opponent_rings_removed):
@@ -339,7 +320,6 @@ class YinshGame:
         """Checks if the game ends in a tie (all 51 markers placed)."""
         total_markers = sum(1 for pos, marker in self.board.hex_positions.items() if marker in ['M_1', 'M_2'])
         if total_markers == MARKER_AVAIL and self.scores[PLAYER_1] < 3 and self.scores[PLAYER_2] < 3:
-            print("The game ends in a tie! All 51 markers have been placed.")
             self.game_over = True
             return True
         return False

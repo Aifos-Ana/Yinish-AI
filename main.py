@@ -4,21 +4,18 @@ from Menu import *
 from YinshGame import *
 from GUI import *
 from IA_player import *
-from Random_player import *
 
 
 current_file_id = 1
 
 
-def save_data_to_file(game, difficulty=None, alghoritm=None):
+def save_data_to_file(game, difficulty=None, algorithm=None):
     file_name = generate_fileName()
     with open(file_name, "w") as sf:
         
-        #title: Who vs Who, if IA what alghoritm and difficulty
-
         if(game.is_IA_player):
             sf.write("Game Mode: Human_player as player1 VS IA_player as player2\n")
-            sf.write(f"Alghoritm used by the IA_player: {'Minimax' if alghoritm == MINIMAX_ALGHORITM else 'Monte Carlo Tree Search'} in {'hard' if difficulty == 'H' else('easy' if difficulty == 'E' else 'medium')} level of difficulty\n\n\n")
+            sf.write(f"Algorithm used by the IA_player: {'Minimax' if algorithm == MINIMAX_ALGHORITM else 'Negamax' if algorithm == NEGAMAX_ALGHORITM else 'Monte Carlo Tree Search'} in {'hard' if difficulty == 'H' else 'easy' if difficulty == 'E' else 'medium'} level of difficulty\n\n\n")
         else:
             sf.write("\tGame Mode: Human_player as player1 VS Human_Player as player2\n\n\n")
 
@@ -66,7 +63,6 @@ def human_vs_human(menu):
     gui.run()
     menu.show_game_over_menu(game.winner, game.scores,game)
     save_data_to_file(game)
-    print(game.board.move_history)
 
     if menu.clicked_exit:
          pygame.quit()
@@ -82,7 +78,6 @@ def human_vs_AI(alghoritm, menu):
         gui.run()
         menu.show_game_over_menu(game.winner, game.scores,game)
         save_data_to_file(game, menu.difficulty , alghoritm)
-        print(game.board.move_history)
 
         if menu.clicked_exit:
          pygame.quit()

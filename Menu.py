@@ -85,15 +85,18 @@ class Menu:
             self.screen.fill((50, 50, 50))
             minimax_rect = pygame.Rect(300, 200, 200, 60)
             mcts_rect = pygame.Rect(300, 300, 200, 60)
-            back_rect = pygame.Rect(300, 400, 200, 60)
+            negamax_rect = pygame.Rect(300, 400, 200, 60)
+            back_rect = pygame.Rect(300, 500, 200, 60)
 
             minimax_text = self.font.render("Minimax", True, WHITE)
             mcts_text = self.font.render("MCTS", True, WHITE)
+            negamax_text = self.font.render("Negamax", True, WHITE)
             back_text = self.font.render("Back", True, WHITE)
 
             self.screen.blit(minimax_text, (350, 210))
             self.screen.blit(mcts_text, (370, 310))
-            self.screen.blit(back_text, (370, 410))
+            self.screen.blit(negamax_text,(350,410))
+            self.screen.blit(back_text, (370, 510))
             pygame.display.update()
 
             for event in pygame.event.get():
@@ -108,6 +111,10 @@ class Menu:
                         algorithm_running = False  # Exit the algorithm menu loop
                     elif mcts_rect.collidepoint(x, y):
                         self.ai_algorithm = MONTE_CARLO_ALGHORITM
+                        self.show_difficulty_menu()  # Show difficulty menu
+                        algorithm_running = False  # Exit the algorithm menu loop
+                    elif negamax_rect.collidepoint(x, y):
+                        self.ai_algorithm = NEGAMAX_ALGHORITM
                         self.show_difficulty_menu()  # Show difficulty menu
                         algorithm_running = False  # Exit the algorithm menu loop
                     elif back_rect.collidepoint(x, y):
